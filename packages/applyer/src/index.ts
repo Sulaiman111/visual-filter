@@ -1,12 +1,51 @@
-import { FilterType, GroupType } from "@visual-filter/common"
+import { FilterType, GroupType, DataType } from "@visual-filter/common"
 
 export = function applyFilter(filter: any, methods: any, data: any) {
+  // Helper function to normalize date values
+  function normalizeDateValue(value: any): Date | null {
+    if (value === null || value === undefined) return null
+    
+    // If it's already a Date object
+    if (value instanceof Date) return value
+    
+    // If it's a string in YYYY-MM-DD format
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return new Date(value + 'T00:00:00.000Z')
+    }
+    
+    // Try to parse as Date
+    const date = new Date(value)
+    return isNaN(date.getTime()) ? null : date
+  }
+
   function buildPremiseTree(filter: any) {
     if (filter.type === FilterType.CONDITION) {
       return data
         .find((field: any) => field.name === filter.fieldName)
         .values.map((value: any) => {
           try {
+            // Handle DATE type with special logic
+            if (filter.dataType === DataType.DATE) {
+              const normalizedValue = normalizeDateValue(value)
+              const normalizedArgument = normalizeDateValue(filter.argument)
+              
+              if (normalizedValue === null || normalizedArgument === null) {
+                return false
+              }
+              
+              switch (filter.method) {
+                case 'equals':
+                  // Compare only the date part (ignore time)
+                  return normalizedValue.toDateString() === normalizedArgument.toDateString()
+                case 'before':
+                  return normalizedValue < normalizedArgument
+                case 'after':
+                  return normalizedValue > normalizedArgument
+                default:
+                  return false
+              }
+            }
+            
             return methods[filter.dataType][filter.method](
               value,
               filter.argument,

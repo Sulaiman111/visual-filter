@@ -63,6 +63,9 @@ export default {
     nominalMethodNames() {
       return Object.keys(this.filteringOptions.methods.nominal)
     },
+    dateMethodNames() {
+      return Object.keys(this.filteringOptions.methods.date || {})
+    },
   },
   watch: {
     filter: {
@@ -91,6 +94,8 @@ export default {
         condition.method =
           (newType === DataType.NUMERIC
             ? this.numericMethodNames[0]
+            : newType === DataType.DATE
+            ? this.dateMethodNames[0]
             : this.nominalMethodNames[0]) || ""
         condition.argument = newSampleValue
         condition.dataType = newType
@@ -117,6 +122,8 @@ export default {
           method:
             (type === DataType.NUMERIC
               ? this.numericMethodNames[0]
+              : type === DataType.DATE
+              ? this.dateMethodNames[0]
               : this.nominalMethodNames[0]) || "",
           argument: sampleValue,
         })
@@ -164,6 +171,7 @@ export default {
             fieldNames: this.fieldNames,
             numericMethodNames: this.numericMethodNames,
             nominalMethodNames: this.nominalMethodNames,
+            dateMethodNames: this.dateMethodNames,
             onUpdateField: this.updateConditionField,
             onDeleteCondition: this.deleteFilter,
           },

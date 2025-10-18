@@ -13,6 +13,7 @@ export enum GroupType {
 export enum DataType {
   NUMERIC = "numeric",
   NOMINAL = "nominal",
+  DATE = "date",
 }
 
 export function deepCopy(src: any): any {

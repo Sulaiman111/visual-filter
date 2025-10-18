@@ -24,10 +24,17 @@ export default {
       type: Array,
       required: true,
     },
+    dateMethodNames: {
+      type: Array,
+      required: true,
+    },
   },
   computed: {
     isNumeric() {
       return this.condition.dataType === DataType.NUMERIC
+    },
+    isDate() {
+      return this.condition.dataType === DataType.DATE
     },
   },
   methods: {
@@ -57,13 +64,14 @@ export default {
       name="methodUpdation"
       v-bind="{
         numericMethodNames: isNumeric && numericMethodNames,
-        nominalMethodNames: isNumeric || nominalMethodNames,
+        nominalMethodNames: !isNumeric && !isDate && nominalMethodNames,
+        dateMethodNames: isDate && dateMethodNames,
         condition,
       }"
     >
       <select v-model="condition.method" data-testId="method-select">
         <option
-          v-for="method in isNumeric ? numericMethodNames : nominalMethodNames"
+          v-for="method in isNumeric ? numericMethodNames : (isDate ? dateMethodNames : nominalMethodNames)"
           :key="method"
           :value="method"
         >
@@ -73,7 +81,7 @@ export default {
     </slot>
     <slot name="argumentUpdation" :condition="condition">
       <input
-        type="text"
+        :type="isDate ? 'date' : 'text'"
         v-model="condition.argument"
         data-testId="argument-input"
       />

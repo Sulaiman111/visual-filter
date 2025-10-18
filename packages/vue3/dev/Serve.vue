@@ -58,6 +58,11 @@ const filteringOptions = {
       type: "numeric",
       values: [3.72, 3.52, 3.4],
     },
+    {
+      name: "Created At",
+      type: "date",
+      values: ["2023-12-15", "2024-01-10", "2024-02-05"],
+    },
   ],
   methods: {
     numeric: {
@@ -80,6 +85,17 @@ const filteringOptions = {
       },
       endsWith(cellValue, argument) {
         return cellValue.endsWith(argument)
+      },
+    },
+    date: {
+      equals(cellValue, argument) {
+        return cellValue === argument
+      },
+      before(cellValue, argument) {
+        return cellValue < argument
+      },
+      after(cellValue, argument) {
+        return cellValue > argument
       },
     },
   },
