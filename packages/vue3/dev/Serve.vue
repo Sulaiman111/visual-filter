@@ -3,6 +3,8 @@ import { ref, onMounted } from 'vue'
 
 const currentFilter = ref<any|null>(null)
 const resetKey = ref(0)
+const initialFilter = ref<any|null>(null)
+const filterComponent = ref<any>(null)
 
 function onFilterUpdate(payload:any){
   const state = payload?.filter ?? payload
@@ -36,10 +38,38 @@ function loadFromQuery(){
   if(!raw) return
   try{
     const parsed = JSON.parse(decodeURIComponent(raw))
+    initialFilter.value = parsed
     localStorage.setItem('vf_filter', JSON.stringify(parsed))
   }catch{}
 }
-onMounted(loadFromQuery)
+
+function undo(){
+  if(filterComponent.value?.undo) {
+    filterComponent.value.undo()
+  }
+}
+
+function redo(){
+  if(filterComponent.value?.redo) {
+    filterComponent.value.redo()
+  }
+}
+
+function loadSavedFilter(){
+  const saved = localStorage.getItem('vf_filter')
+  if(saved) {
+    try {
+      const parsed = JSON.parse(saved)
+      initialFilter.value = parsed
+      resetKey.value++
+    } catch {}
+  }
+}
+
+onMounted(() => {
+  loadFromQuery()
+  loadSavedFilter()
+})
 
 const filteringOptions = {
   data: [
@@ -103,15 +133,20 @@ const filteringOptions = {
 </script>
 
 <template>
-  <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+  <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap">
     <button @click="saveToLocal">Save</button>
     <button @click="copyLink" :disabled="!currentFilter">Copy Link</button>
     <button @click="resetAll">Reset</button>
+    <button @click="undo" :disabled="!filterComponent?.canUndo">Undo</button>
+    <button @click="redo" :disabled="!filterComponent?.canRedo">Redo</button>
+    <button @click="loadSavedFilter">Load Saved</button>
   </div>
 
   <vue-visual-filter
+    ref="filterComponent"
     :key="resetKey"
     :filtering-options="filteringOptions"
+    :initial-filter="initialFilter"
     @filter-update="onFilterUpdate"
   />
 </template>

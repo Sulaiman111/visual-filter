@@ -43,6 +43,14 @@ export default {
         }
       },
     },
+    initialFilter: {
+      type: Object,
+      default: null,
+    },
+    resetKey: {
+      type: [String, Number],
+      default: 0,
+    },
   },
   data() {
     return {
@@ -51,6 +59,9 @@ export default {
         groupType: GroupType.AND,
         filters: [],
       },
+      history: [],
+      historyIndex: -1,
+      isUpdatingFromHistory: false,
     }
   },
   computed: {
@@ -66,11 +77,20 @@ export default {
     dateMethodNames() {
       return Object.keys(this.filteringOptions.methods.date || {})
     },
+    canUndo() {
+      return this.historyIndex > 0
+    },
+    canRedo() {
+      return this.historyIndex < this.history.length - 1
+    },
   },
   watch: {
     filter: {
       deep: true,
       handler() {
+        if (!this.isUpdatingFromHistory) {
+          this.addToHistory()
+        }
         this.$emit("filterUpdate", {
           filter: deepCopy(this.filter),
           data: applyFilter(
@@ -79,6 +99,19 @@ export default {
             deepCopy(this.filteringOptions.data),
           ),
         })
+      },
+    },
+    initialFilter: {
+      handler(newFilter) {
+        if (newFilter) {
+          this.loadFilter(newFilter)
+        }
+      },
+      immediate: true,
+    },
+    resetKey: {
+      handler() {
+        this.resetFilter()
       },
     },
   },
@@ -141,6 +174,62 @@ export default {
       if (filterToDelete !== this.filter) {
         recursiveDeletion(this.filter)
       }
+    },
+    addToHistory() {
+      const filterCopy = deepCopy(this.filter)
+      this.history = this.history.slice(0, this.historyIndex + 1)
+      this.history.push(filterCopy)
+      this.historyIndex = this.history.length - 1
+      
+      // Limit history size to prevent memory issues
+      if (this.history.length > 50) {
+        this.history.shift()
+        this.historyIndex--
+      }
+    },
+    undo() {
+      if (this.canUndo) {
+        this.historyIndex--
+        this.loadFromHistory()
+      }
+    },
+    redo() {
+      if (this.canRedo) {
+        this.historyIndex++
+        this.loadFromHistory()
+      }
+    },
+    loadFromHistory() {
+      this.isUpdatingFromHistory = true
+      this.filter = deepCopy(this.history[this.historyIndex])
+      this.$nextTick(() => {
+        this.isUpdatingFromHistory = false
+      })
+    },
+    loadFilter(filter) {
+      this.isUpdatingFromHistory = true
+      this.filter = deepCopy(filter)
+      this.history = [deepCopy(filter)]
+      this.historyIndex = 0
+      this.$nextTick(() => {
+        this.isUpdatingFromHistory = false
+      })
+    },
+    resetFilter() {
+      this.isUpdatingFromHistory = true
+      this.filter = {
+        type: FilterType.GROUP,
+        groupType: GroupType.AND,
+        filters: [],
+      }
+      this.history = [deepCopy(this.filter)]
+      this.historyIndex = 0
+      this.$nextTick(() => {
+        this.isUpdatingFromHistory = false
+      })
+    },
+    getCurrentFilter() {
+      return deepCopy(this.filter)
     },
   },
   render() {
